@@ -160,19 +160,22 @@ def clean_channel(channel_id, channel_type, time_range, user_id=None, bot=False)
       latest = m['ts']
 
       # Delete user messages
-      if m['type'] == 'message':
+      if m.get('type') == 'message':
         # exclude pinned message if asked
-        if not should_delete_item(m):
-          continue
+        #if not should_delete_item(m):
+        #  continue
         # If it's a normal user message
         if m.get('user'):
           # Delete message if user_name matched or `--user=*`
           if m.get('user') == user_id or user_id == -1:
             delete_message_on_channel(channel_id, m)
         # Thread messages
-        replies = m.get('replies')
+        replies = slack.conversations.replies(channel_id, m.get('ts')).body
+        if args.rate_limit:
+          time.sleep(args.rate_limit)
+
         if replies:
-          for r in replies:
+          for r in replies['messages']:
             if r.get('user') and (r.get('user') == user_id or user_id == -1):
                 delete_message_on_channel(channel_id, r)
         # Delete bot messages
